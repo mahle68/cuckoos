@@ -170,3 +170,13 @@ ann2 <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annot
 write.csv(ann2, file = "/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated_tracks_1km.csv", row.names = F)
 
 
+#--------------------plot conditions encountered -----
+
+data <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated_tracks_1km.csv")
+
+sea <- data %>% 
+  drop_na(sst) %>%  #filter for sea-crossing. also needs a lat filter to remove points over lakes
+  st_as_sf(coords = c("location.long", "location.lat"), crs = wgs)
+
+mapview(data_sf, zcol = "individual.local.identifier")
+
