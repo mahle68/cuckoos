@@ -13,6 +13,8 @@ library(lubridate)
 source("/home/enourani/ownCloud/Work/Projects/functions.R")
 wgs <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 
+
+### STEP 1: prepare data for annotation -------------------------------------------------------------------------------------------
 #open coordinates sent by Olga
 
 target_coords <- read_excel("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/Coordinates for Elham.xlsx", range = "A2:C3", 
@@ -75,7 +77,8 @@ colnames(alternatives_df)[c(2,3)] <- c("location-lat", "location-long")
 write.csv(alternatives_df, file = "/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotate_sea_crossing.csv")
 
 
-#after annotation: calculate wind support
+
+### STEP 2: calculate wind support and crosswind -------------------------------------------------------------------------------------------
 
 data <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated/900mbar_alts/annotate_sea_crossing.csv-3896691569207389862.csv") %>% 
   mutate(timestamp = as.POSIXct(timestamp, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")) %>% 
@@ -89,6 +92,18 @@ data <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annot
   ungroup()
 
 saveRDS(data, "/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/12_day_comparisons.rds")
+
+
+### STEP 3: Plots -------------------------------------------------------------------------------------------
+
+data <- readRDS("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/12_day_comparisons.rds")
+
+
+data <- data %>% 
+  arrange(ID, timestamp) %>% 
+  mutate(day_of_departure = ifelse(used == 1, "Yes", "No"),
+         day_of_year = yday(timestamp)) %>% 
+  as.data.frame()
 
 #plot
 p <- ggplot(data, aes(x = wind_support)) + 
@@ -118,12 +133,6 @@ png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/wind_support_alter
 p
 dev.off()
 
-data <- data %>% 
-  arrange(ID, timestamp) %>% 
-  mutate(day_of_departure = ifelse(used == 1, "Yes", "No"),
-         day_of_year = yday(timestamp)) %>% 
-  as.data.frame()
-
 #plot wind support against time
 p <- ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departure, fill = day_of_departure)) + 
   geom_bar(stat = "identity") +
@@ -138,7 +147,7 @@ p <- ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departur
  dev.off()
 
  
- #plot wind support agains time. with linear smoothing
+#plot wind support against time. with linear smoothing
 ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departure, fill = day_of_departure)) + 
    geom_smooth(method = "gam", alpha = .1, level = .95) + #95% standard error
    geom_point() +
@@ -146,3 +155,13 @@ ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departure, fi
    labs(title = "Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
    theme_minimal() +
    theme(legend.position = "bottom")
+
+#plot cross wind against time.
+
+ggplot(data, aes(x = day_of_year, y = cross_wind, color = day_of_departure, fill = day_of_departure)) + 
+  geom_bar(stat = "identity") +
+  #scale_fill_discrete(values = c("No","Yes"), name = "day of departure") +
+  facet_wrap(~ID) +
+  labs(title = "Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
