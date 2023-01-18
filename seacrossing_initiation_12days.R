@@ -112,23 +112,36 @@ ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departure, fi
   geom_bar(stat = "identity") +
   #scale_fill_discrete(values = c("No","Yes"), name = "day of departure") +
   facet_wrap(~ID) +
-  labs(title = "Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
+  labs(title = "Wind support on day of crossing compared to \n 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
   theme_bw() +
   theme(legend.position = "bottom")
 
  dev.off()
 
 #plot cross wind against time.
-png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/figures/wind_support_vs_days.png", width = 6, height = 6, units = "in", res = 300)
+png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/figures/cross_wind_vs_days.png", width = 6, height = 6, units = "in", res = 300)
 
 ggplot(data, aes(x = day_of_year, y = cross_wind, color = day_of_departure, fill = day_of_departure)) + 
   geom_bar(stat = "identity") +
   #scale_fill_discrete(values = c("No","Yes"), name = "day of departure") +
   facet_wrap(~ID) +
-  labs(title = "Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
+  labs(title = "Cross wind on day of crossing compared to \n 12 days prior to sea-crossing", y = "cross wind", x = "day of year") +
   theme_bw() +
   theme(legend.position = "bottom")
 
 dev.off()
 
+
+#plot cross wind against wind speed
+png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/figures/wind_speed_vs_days.png", width = 6, height = 6, units = "in", res = 300)
+
+ggplot(data, aes(x = day_of_year, y = wind_speed, color = day_of_departure, fill = day_of_departure)) + 
+  geom_bar(stat = "identity") +
+  #scale_fill_discrete(values = c("No","Yes"), name = "day of departure") +
+  facet_wrap(~ID) +
+  labs(title = "Wind speed on day of crossing compared to \n 12 days prior to sea-crossing", y = "wind speed", x = "day of year") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+dev.off()
 
