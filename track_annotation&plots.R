@@ -172,11 +172,71 @@ write.csv(ann2, file = "/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos
 
 #--------------------plot conditions encountered -----
 
-data <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated_tracks_1km.csv")
-
-sea <- data %>% 
-  drop_na(sst) %>%  #filter for sea-crossing. also needs a lat filter to remove points over lakes
+data_sf <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated_tracks_1km.csv") %>% 
   st_as_sf(coords = c("location.long", "location.lat"), crs = wgs)
 
-mapview(data_sf, zcol = "individual.local.identifier")
+#coastline shapefile
+coastline <- st_read("/home/enourani/ownCloud/Work/GIS_files/continent_shapefile/World_Continents.shp") %>% 
+  st_crop(st_bbox(data %>% st_as_sf(coords = c("location.long", "location.lat"), crs = wgs))) %>%
+  mutate(sea = F)
+  #st_union()
 
+
+data_sw <- st_join(data_sf, coastline) %>% 
+  mutate(sea = ifelse(is.na(sea), "sea", "land"))
+
+mapview(data_sw, zcol = "sea")
+
+#keep sea-crossing tracks. along with last point on land before departure and first point on land after arrival
+sea_tracks <- data_sw %>% 
+  group_by(individual.local.identifier) %>% 
+  arrange(timestamp) %>% 
+  filter(sea == "sea" | sea == "land" & lead(sea,1) == "sea" | sea == "land" & lag(sea,1) == "sea")
+
+mapview(sea_tracks, zcol = "individual.local.identifier")
+
+#summarize track info... and plot them
+
+#convert to long form for plotting
+long_df <- sea_tracks %>% 
+  as("Spatial") %>% 
+  as.data.frame() %>% 
+  mutate(day_of_year = yday(timestamp)) %>% 
+  group_by(individual.local.identifier) %>% 
+  pivot_longer(cols = c("delta_t", "wind_speed", "wind_support", "cross_wind"),
+               names_to = "variable_names",
+               values_to = "variable_values")
+
+
+#plot with 4 panels
+ggplot(long_df, aes(x = day_of_year, y = variable_values, color = individual.local.identifier)) + 
+  geom_bar(stat = "identity") +
+  facet_wrap(~ variable_names) +
+  labs(title = "atmospheric support along the sea-crossing trajectories", y = "wind support", x = "day of year") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+#plot with 4 panels with ridges
+ggplot(long_df, aes(x = day_of_year, y = variable_values, color = individual.local.identifier)) + 
+  geom_bar(stat = "identity") +
+  facet_wrap(~ variable_names) +
+  labs(title = "atmospheric support along the sea-crossing trajectories", y = "wind support", x = "day of year") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+# sea <- data %>% 
+#   drop_na(sst) %>%  #filter for sea-crossing.
+#   filter(location.lat < 39) %>% #also needs a lat filter to remove points over lakes
+#   st_as_sf(coords = c("location.long", "location.lat"), crs = wgs)
+# 
+# mapview(data_sf, zcol = "individual.local.identifier")
+# 
+# data %>% 
+#   drop_na(sst) %>% 
+#   filter(location.lat < 39) %>% #this is a very lazy method :/
+#   
+  #steps:
+  #1) for each track, average wind support accumulated over the sea
+  #2) average wind speed encountered
+  #3) average delta t encountered. or really just a bar chart
