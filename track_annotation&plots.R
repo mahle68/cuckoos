@@ -12,6 +12,8 @@ library(rworldmap)
 library(cowplot)
 library(ncdf4)
 library(RNCEP)
+library(ggridges)
+library(viridis)
 
 source("/home/enourani/ownCloud/Work/Projects/functions.R")
 wgs <- CRS("+proj=longlat +datum=WGS84 +no_defs")
@@ -217,26 +219,20 @@ ggplot(long_df, aes(x = day_of_year, y = variable_values, color = individual.loc
   theme(legend.position = "bottom")
 
 #plot with 4 panels with ridges
-ggplot(long_df, aes(x = day_of_year, y = variable_values, color = individual.local.identifier)) + 
-  geom_bar(stat = "identity") +
-  facet_wrap(~ variable_names) +
-  labs(title = "atmospheric support along the sea-crossing trajectories", y = "wind support", x = "day of year") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
+X11(width = 9, height = 8)
 
+png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/figures/along_tracks.png", width = 9, height = 8, units = "in", res = 300)
+ggplot(long_df, aes(x = variable_values, y = individual.local.identifier, fill = stat(x))) +
+  geom_density_ridges_gradient(jittered_points = TRUE, scale = 1.5, rel_min_height = .01,
+                          point_shape = "|", point_size = 2, size = 0.25, alpha = 0.6,
+                          position = position_points_jitter(height = 0)) + 
+  scale_fill_viridis(option = "mako", guide = "none") +
+  facet_wrap(~ variable_names, labeller = labeller(variable_names = c( "cross_wind" = "Corss wind (m/s)", 
+                                                                    "delta_t" = "Delta T (°C)", 
+                                                                    "wind_speed" = "Wind speed (m/s)",
+                                                                    "wind_support" = "Wind support (m/s)"))) +
+  labs(title = "Atmospheric conditions experienced along the sea-crossing tracks", y = "", x = "") +
+  theme_bw() +
+  theme(legend.position = NULL)
 
-# sea <- data %>% 
-#   drop_na(sst) %>%  #filter for sea-crossing.
-#   filter(location.lat < 39) %>% #also needs a lat filter to remove points over lakes
-#   st_as_sf(coords = c("location.long", "location.lat"), crs = wgs)
-# 
-# mapview(data_sf, zcol = "individual.local.identifier")
-# 
-# data %>% 
-#   drop_na(sst) %>% 
-#   filter(location.lat < 39) %>% #this is a very lazy method :/
-#   
-  #steps:
-  #1) for each track, average wind support accumulated over the sea
-  #2) average wind speed encountered
-  #3) average delta t encountered. or really just a bar chart
+dev.off()

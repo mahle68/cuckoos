@@ -105,63 +105,30 @@ data <- data %>%
          day_of_year = yday(timestamp)) %>% 
   as.data.frame()
 
-#plot
-p <- ggplot(data, aes(x = wind_support)) + 
-  geom_density() +
-  geom_segment(data = data %>%  dplyr::filter(used == 1), aes(x = wind_support, xend = wind_support, y = 0, yend = 0.25,
-                                     linetype = "Selected wind support"), color = "red") +
-  facet_wrap(~ID) +
-  theme_minimal() +
-  theme(legend.title = element_blank(),
-        legend.position = "bottom")
-p
-
-
-#histogram
-p <- ggplot(data, aes(x = wind_support)) + 
-  geom_histogram(colour="black", fill="white") +
-  geom_segment(data = data %>%  dplyr::filter(used == 1), aes(x = wind_support, xend = wind_support, y = 0, yend =4,
-                                                              linetype = "Selected wind support"), color = "red") +
-  facet_wrap(~ID) +
-  labs(title="Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "") +
-  theme_minimal() +
-  theme(legend.title = element_blank(),
-        legend.position = "bottom")
-p
-
-png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/wind_support_alternative_days.png", width = 6, height = 6, units = "in", res = 300)
-p
-dev.off()
-
 #plot wind support against time
-p <- ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departure, fill = day_of_departure)) + 
+png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/figures/wind_support_vs_days.png", width = 6, height = 6, units = "in", res = 300)
+
+ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departure, fill = day_of_departure)) + 
   geom_bar(stat = "identity") +
   #scale_fill_discrete(values = c("No","Yes"), name = "day of departure") +
   facet_wrap(~ID) +
   labs(title = "Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
-  theme_minimal() +
+  theme_bw() +
   theme(legend.position = "bottom")
 
- png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/wind_support_vs_days.png", width = 6, height = 6, units = "in", res = 300)
- p
  dev.off()
 
- 
-#plot wind support against time. with linear smoothing
-ggplot(data, aes(x = day_of_year, y = wind_support, color = day_of_departure, fill = day_of_departure)) + 
-   geom_smooth(method = "gam", alpha = .1, level = .95) + #95% standard error
-   geom_point() +
-   facet_wrap(~ID) +
-   labs(title = "Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
-   theme_minimal() +
-   theme(legend.position = "bottom")
-
 #plot cross wind against time.
+png("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/figures/wind_support_vs_days.png", width = 6, height = 6, units = "in", res = 300)
 
 ggplot(data, aes(x = day_of_year, y = cross_wind, color = day_of_departure, fill = day_of_departure)) + 
   geom_bar(stat = "identity") +
   #scale_fill_discrete(values = c("No","Yes"), name = "day of departure") +
   facet_wrap(~ID) +
   labs(title = "Wind support on day of crossing compared to 12 days prior to sea-crossing", y = "wind support", x = "day of year") +
-  theme_minimal() +
+  theme_bw() +
   theme(legend.position = "bottom")
+
+dev.off()
+
+
