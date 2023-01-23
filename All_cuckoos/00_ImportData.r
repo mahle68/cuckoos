@@ -1,6 +1,6 @@
 #install.packages("readxl")
 library(readxl)
-cookoos <- read_xlsx("/home/kami/Documents/All data_combined common cuckoo tracking studies_unmanipulated.xlsx")
+cookoos <- read_xlsx("./Data/Documents/All data_combined common cuckoo tracking studies_unmanipulated.xlsx")
 cooked <- cookoos[,unlist(lapply(1:ncol(cookoos), function(x) any(!is.na(cookoos[,x]))))]
 names(cooked) <- gsub("-", ".", names(cooked))
 names(cooked) <- gsub(":", ".", names(cooked))
@@ -19,5 +19,5 @@ cooked <- cooked[order(cooked$individual.local.identifier, as.POSIXct(cooked$tim
 cooks <- move(x=cooked$location.long, y=cooked$location.lat, time=as.POSIXct(cooked$timestamp, format="%Y-%m-%d %H:%M:%S", tz="UTC"), 
               data=cooked, proj=CRS("+proj=longlat +ellps=WGS84"), animal=cooked$individual.local.identifier, sensor="ICARUS")
 
-saveRDS(cooks, "/home/kami/Documents/Cookoos_as_move.rds")
+saveRDS(cooks, "./Data/Cookoos_as_move.rds")
   
