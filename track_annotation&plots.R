@@ -151,7 +151,6 @@ old_ann <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/an
   mutate(timestamp,timestamp = as.POSIXct(strptime(timestamp,format = "%Y-%m-%d %H:%M:%S"),tz = "UTC")) %>% 
   dplyr::select(-c("wind_speed", "wind_u_10m", "wind_v_10m")) 
 
-
 ann2 <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated/900mbar/for_annotation_no_NAs.csv-5783841532802204946.csv") %>% 
   mutate(timestamp,timestamp = as.POSIXct(strptime(timestamp,format = "%Y-%m-%d %H:%M:%S"),tz = "UTC")) %>% 
   full_join(old_ann) %>% 
@@ -171,7 +170,6 @@ ann2 <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annot
 
 write.csv(ann2, file = "/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated_tracks_1km.csv", row.names = F)
 
-
 #--------------------plot conditions encountered -----
 
 data_sf <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/annotated_tracks_1km.csv") %>% 
@@ -179,9 +177,9 @@ data_sf <- read.csv("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/an
 
 #coastline shapefile
 coastline <- st_read("/home/enourani/ownCloud/Work/GIS_files/continent_shapefile/World_Continents.shp") %>% 
-  st_crop(st_bbox(data %>% st_as_sf(coords = c("location.long", "location.lat"), crs = wgs))) %>%
+  #st_crop(st_bbox(data %>% st_as_sf(coords = c("location.long", "location.lat"), crs = wgs))) %>%
+  st_crop(st_bbox(data_sf)) %>%
   mutate(sea = F)
-  #st_union()
 
 
 data_sw <- st_join(data_sf, coastline) %>% 
@@ -196,6 +194,8 @@ sea_tracks <- data_sw %>%
   filter(sea == "sea" | sea == "land" & lead(sea,1) == "sea" | sea == "land" & lag(sea,1) == "sea")
 
 mapview(sea_tracks, zcol = "individual.local.identifier")
+
+saveRDS(sea_tracks, "/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/seacrossing_tracks.rds")
 
 #summarize track info... and plot them
 
