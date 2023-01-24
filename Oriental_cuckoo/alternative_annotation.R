@@ -3,17 +3,20 @@
 
 library(tidyverse)
 library(move)
+library(lubridate)
 library(mapview)
 library(CircStats)
 library(circular)
 library(fitdistrplus)
-
+library(ggridges)
+library(ggnewscale)
+library(viridis)
 
 meters_proj <- CRS("+proj=moll +ellps=WGS84")
 wgs <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 source("/home/enourani/ownCloud/Work/Projects/functions.R")
 
-setwd("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/")
+setwd("/home/enourani/ownCloud/Work/Collaborations/cuckoos/Olga_cuckoos/")
 
 #open sea-crossing tracks! prepared in track_annotation&plots.R
 cck <- readRDS("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/seacrossing_tracks.rds") %>% 
@@ -142,12 +145,90 @@ saveRDS(used_av_track, file = "used_av_n50.rds")
 df <- used_av_track %>% 
   mutate(timestamp = paste(as.character(timestamp),"000",sep = ".")) %>% 
   dplyr::select("timestamp", "location.long", "location.lat", "individual.local.identifier", "tag.local.identifier", 
-                "stratum", "turning_angle", "step_length", "heading") %>% 
+                "stratum", "turning_angle", "step_length", "heading", "used") %>% 
   drop_na() %>% 
   as.data.frame()
 
 #rename columns
 colnames(df)[c(2,3)] <- c("location-long","location-lat")
 
-write.csv(df, "oriental_cuckoo_used_av_n50.csv") #annoate at the 900 mb pressure level
+write.csv(df, "oriental_cuckoo_used_av_n50.csv") #annotate at the 900 mb pressure level
 
+
+# STEP3: plot-------------------------------------------------------
+
+#open and prep annotated data
+ann <- read.csv("/home/enourani/ownCloud/Work/Collaborations/cuckoos/Olga_cuckoos/annotated/used_available_900mb/oriental_cuckoo_used_av_n50.csv-1361729087688694248.csv") %>% 
+  dplyr::select(-1) %>% 
+  mutate(timestamp,timestamp = as.POSIXct(strptime(timestamp,format = "%Y-%m-%d %H:%M:%S"),tz = "UTC"),
+         wind_speed = sqrt(ECMWF.ERA5.PL.U.Wind^2 + ECMWF.ERA5.PL.V.Wind^2),
+         delta_t = ECMWF.ERA5.SL.Sea.Surface.Temperature - ECMWF.ERA5.SL.Temperature..2.m.above.Ground.) %>% 
+  rename(sst = ECMWF.ERA5.SL.Sea.Surface.Temperature,
+         t2m = ECMWF.ERA5.SL.Temperature..2.m.above.Ground.,
+         wind_u_900 = ECMWF.ERA5.PL.U.Wind,
+         wind_v_900 = ECMWF.ERA5.PL.V.Wind) %>%
+  mutate(wind_support = wind_support(u = wind_u_900, v = wind_v_900, heading = heading),
+         cross_wind = cross_wind(u = wind_u_900, v = wind_v_900, heading = heading)) %>% 
+  as.data.frame()
+
+#prepare long form dataframe
+long_df <- ann %>% 
+  mutate(day_of_year = yday(timestamp)) %>% 
+  group_by(individual.local.identifier) %>% 
+  pivot_longer(cols = c("delta_t", "wind_speed", "wind_support", "cross_wind"),
+               names_to = "variable_names",
+               values_to = "variable_values")
+
+
+#plot with 4 panels with ridges
+X11(width = 9, height = 8)
+
+png("/home/enourani/ownCloud/Work/Collaborations/cuckoos/Olga_cuckoos/figures/along_tracks_available.png", width = 9, height = 8, units = "in", res = 300)
+
+ggplot(long_df, aes(x = variable_values, y = individual.local.identifier)) +
+  geom_density_ridges_gradient(data = long_df %>%  filter(used == 0), color = "#A9A9A9", fill = "#A9A9A9",
+                               jittered_points = TRUE, scale = 1.5, rel_min_height = .01,
+                               point_shape = "|", point_size = 2, size = 0.25, alpha = 0.6) + 
+  new_scale_fill() +
+  geom_density_ridges_gradient(data = long_df %>%  filter(used == 1), aes( fill = stat(x), point_color = stat(x)),
+                               jittered_points = TRUE, scale = 1.5, rel_min_height = .01,
+                               point_shape = "|", point_size = 2, size = 0.25, alpha = 0.6,
+                               geom = "density_ridges_gradient") +
+  scale_fill_viridis(option = "mako", guide = "none") +
+  facet_wrap(~ variable_names, labeller = labeller(variable_names = c( "cross_wind" = "Corss wind (m/s)", 
+                                                                       "delta_t" = "Delta T (°C)", 
+                                                                       "wind_speed" = "Wind speed (m/s)",
+                                                                       "wind_support" = "Wind support (m/s)"))) +
+  labs(title = "Atmospheric conditions experienced along the sea-crossing tracks", y = "", x = "") +
+  theme_bw() +
+  theme(legend.position = NULL)
+
+dev.off()
+
+
+#####################
+ggplot(raw_wind, aes(x = wind_speed_ms, y = species_f)) + 
+  stat_density_ridges(data = raw_wind[raw_wind$wind_data == "range",], color = "#A9A9A9", fill = "#A9A9A9",
+                      jittered_points = TRUE, rel_min_height = .01,
+                      point_shape = "|", point_size = 1, point_alpha = 0.8, size = 0.2,
+                      calc_ecdf = F, panel_scaling = F, alpha = 0.5,
+                      scale = 1.5) +
+  new_scale_fill() +
+  stat_density_ridges(data = raw_wind[raw_wind$wind_data == "gps_pts",], aes( fill = stat(x), point_color = stat(x)),
+                      jittered_points = TRUE, rel_min_height = .01,
+                      point_shape = "|", point_size = 1, point_alpha = 1, size = 0.2,
+                      geom = "density_ridges_gradient", calc_ecdf = F, panel_scaling = F, 
+                      scale = 1.5) +
+  scale_fill_gradientn(colours = alpha(oce::oceColorsPalette(120), alpha = 0.6), limits = c(0,23), 
+                       na.value = "white", guide = 'none') +
+  scale_color_gradientn(aesthetics = "point_color",  colours = alpha(oce::oceColorsPalette(120)), limits = c(0,23), 
+                        na.value = "white", guide = 'none') +
+  new_scale_color() +
+  scale_x_continuous(limits = c(-1, 28)) +
+  geom_point(data = raw_wind %>% group_by(species_f) %>% slice(1),
+             aes(x = -0.9, y = species_f, shape = flight_style_F), size = 1.8, stroke = 0.4, color = clr) +
+  scale_shape_manual(values = c("Dynamic soaring" = 4,"Flapping" = 0, "Thermal soaring" = 2, "Wind soaring" = 1)) +
+  geom_image(data = lm_input, aes( x = 22, y = as.numeric(species_f) + 0.5, image = image),asp = 0.5, size = 0.05) +
+  labs(y = "", x = expression("Wind speed (m s"^-1*")")) +
+  theme_minimal() +
+  guides(shape = guide_legend("Flight style:"))
