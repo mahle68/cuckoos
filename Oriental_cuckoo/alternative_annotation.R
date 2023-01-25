@@ -10,7 +10,7 @@ library(circular)
 library(fitdistrplus)
 library(ggridges)
 library(ggnewscale)
-library(viridis)
+library(oce)
 
 meters_proj <- CRS("+proj=moll +ellps=WGS84")
 wgs <- CRS("+proj=longlat +datum=WGS84 +no_defs")
@@ -180,55 +180,54 @@ long_df <- ann %>%
                values_to = "variable_values")
 
 
+### for used distributions: use original annotated data (from track_annotation&plots.R) because the used rows in the used_available file are fewer than original
+
+sea_tracks <- readRDS("/home/enourani/ownCloud/Work/Collaborations/cuckoos/Olga_cuckoos/seacrossing_tracks.rds") %>% 
+  mutate(timestamp,timestamp = as.POSIXct(strptime(timestamp,format = "%Y-%m-%d %H:%M:%S"),tz = "UTC"))
+
+#convert to long form for plotting
+long_sea <- sea_tracks %>% 
+  as("Spatial") %>% 
+  as.data.frame() %>% 
+  filter(individual.local.identifier != "#1535200750") %>%  #remove the track with no actual points over the sea
+  mutate(day_of_year = yday(timestamp)) %>% 
+  group_by(individual.local.identifier) %>% 
+  pivot_longer(cols = c("delta_t", "wind_speed", "wind_support", "cross_wind"),
+               names_to = "variable_names",
+               values_to = "variable_values") %>% 
+  mutate(used = 1) %>% 
+  dplyr::select("timestamp", "variable_values", "variable_names", "individual.local.identifier", "tag.local.identifier", "used") 
+
+
+### for available distributions: use the used_available file
+##apend the used and avilable together
+
+plot_input <- long_df %>%  
+  filter(used == 0) %>% 
+  dplyr::select("timestamp", "variable_values", "variable_names", "individual.local.identifier", "tag.local.identifier", "used") %>% 
+  full_join(long_sea)
+
+cl <- oce::oceColorsPalette(10)[2]
+            
 #plot with 4 panels with ridges
 X11(width = 9, height = 8)
 
 png("/home/enourani/ownCloud/Work/Collaborations/cuckoos/Olga_cuckoos/figures/along_tracks_available.png", width = 9, height = 8, units = "in", res = 300)
 
-ggplot(long_df, aes(x = variable_values, y = individual.local.identifier)) +
-  geom_density_ridges_gradient(data = long_df %>%  filter(used == 0), color = "#A9A9A9", fill = "#A9A9A9",
-                               jittered_points = TRUE, scale = 1.5, rel_min_height = .01,
-                               point_shape = "|", point_size = 2, size = 0.25, alpha = 0.6) + 
-  new_scale_fill() +
-  geom_density_ridges_gradient(data = long_df %>%  filter(used == 1), aes( fill = stat(x), point_color = stat(x)),
-                               jittered_points = TRUE, scale = 1.5, rel_min_height = .01,
-                               point_shape = "|", point_size = 2, size = 0.25, alpha = 0.6,
-                               geom = "density_ridges_gradient") +
-  scale_fill_viridis(option = "mako", guide = "none") +
+ggplot(plot_input, aes(x = variable_values, y = individual.local.identifier, color = used)) +
+  geom_density_ridges_gradient(data = plot_input %>%  filter(used == 0),  color = "gray65", point_color = "gray65", fill =  NA,
+                               jittered_points = TRUE, position = position_points_jitter(width = 0.05, height = 0), scale = 1, rel_min_height = .01,
+                               point_shape = "|", point_size = 1.5, size = 0.8)  + 
+  geom_density_ridges_gradient(data = plot_input %>%  filter(used == 1), fill = NA, point_color = cl, color = cl,
+                               jittered_points = TRUE, position = position_points_jitter(width = 0.05, height = 0), scale = 1, rel_min_height = .01,
+                               point_shape = "|", point_size = 1.5,size = 0.8) +
   facet_wrap(~ variable_names, labeller = labeller(variable_names = c( "cross_wind" = "Corss wind (m/s)", 
                                                                        "delta_t" = "Delta T (°C)", 
                                                                        "wind_speed" = "Wind speed (m/s)",
                                                                        "wind_support" = "Wind support (m/s)"))) +
-  labs(title = "Atmospheric conditions experienced along the sea-crossing tracks", y = "", x = "") +
-  theme_bw() +
-  theme(legend.position = NULL)
+  scale_colour_manual(values = c("gray65", cl)) +
+  labs(title = "Atmospheric conditions experienced along the sea-crossing tracks \n (blue = used; gray = available)", y = "", x = "") +
+  theme_linedraw() +
+  theme(legend.position = "bottom")
 
 dev.off()
-
-
-#####################
-ggplot(raw_wind, aes(x = wind_speed_ms, y = species_f)) + 
-  stat_density_ridges(data = raw_wind[raw_wind$wind_data == "range",], color = "#A9A9A9", fill = "#A9A9A9",
-                      jittered_points = TRUE, rel_min_height = .01,
-                      point_shape = "|", point_size = 1, point_alpha = 0.8, size = 0.2,
-                      calc_ecdf = F, panel_scaling = F, alpha = 0.5,
-                      scale = 1.5) +
-  new_scale_fill() +
-  stat_density_ridges(data = raw_wind[raw_wind$wind_data == "gps_pts",], aes( fill = stat(x), point_color = stat(x)),
-                      jittered_points = TRUE, rel_min_height = .01,
-                      point_shape = "|", point_size = 1, point_alpha = 1, size = 0.2,
-                      geom = "density_ridges_gradient", calc_ecdf = F, panel_scaling = F, 
-                      scale = 1.5) +
-  scale_fill_gradientn(colours = alpha(oce::oceColorsPalette(120), alpha = 0.6), limits = c(0,23), 
-                       na.value = "white", guide = 'none') +
-  scale_color_gradientn(aesthetics = "point_color",  colours = alpha(oce::oceColorsPalette(120)), limits = c(0,23), 
-                        na.value = "white", guide = 'none') +
-  new_scale_color() +
-  scale_x_continuous(limits = c(-1, 28)) +
-  geom_point(data = raw_wind %>% group_by(species_f) %>% slice(1),
-             aes(x = -0.9, y = species_f, shape = flight_style_F), size = 1.8, stroke = 0.4, color = clr) +
-  scale_shape_manual(values = c("Dynamic soaring" = 4,"Flapping" = 0, "Thermal soaring" = 2, "Wind soaring" = 1)) +
-  geom_image(data = lm_input, aes( x = 22, y = as.numeric(species_f) + 0.5, image = image),asp = 0.5, size = 0.05) +
-  labs(y = "", x = expression("Wind speed (m s"^-1*")")) +
-  theme_minimal() +
-  guides(shape = guide_legend("Flight style:"))
