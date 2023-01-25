@@ -13,7 +13,7 @@ ck <- readRDS("Data/Cookoos_as_move.rds") %>%
 
 #plot
 
-world <- st_read("/home/enourani/ownCloud/Work/GIS_files/continent_shapefile/World_Continents.shp") %>% 
+world <- st_read("/home/enourani/ownCloud/Work/Collaborations/cuckoos/Kasper_cuckoos/Figures/World_Continents.shp") %>% 
   st_union()
 
 png("all_cuckoos.png", res = 300, width = 11, height = 8, units = "in")
