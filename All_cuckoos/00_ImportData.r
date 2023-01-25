@@ -21,3 +21,4 @@ cooks <- move(x=cooked$location.long, y=cooked$location.lat, time=as.POSIXct(coo
 
 saveRDS(cooks, "./Data/Cookoos_as_move.rds")
   
+
