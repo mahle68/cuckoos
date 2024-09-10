@@ -1,0 +1,7 @@
+ffmpeg -framerate 3 -pattern_type glob -i "*.png" hindcast_cu_all_pa.mp4
+
+ffmpeg -framerate 3 -pattern_type glob -i "*.png" hindcast_CuGr1_2_pa.mp4
+
+ffmpeg -framerate 3 -pattern_type glob -i "*.png" hindcast_CuGr3_4_pa.mp4
+
+ffmpeg -framerate 3 -pattern_type glob -i "*.png" hindcast_CuOpt_pb.mp4
