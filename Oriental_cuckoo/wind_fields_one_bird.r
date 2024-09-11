@@ -28,7 +28,7 @@ cu02_fall <- cu02 %>%
          yr_mn = paste(year, month, sep = "_"),
          day_hr = paste0(day, "_", hour),
          unique_hour = paste(yday(timestamp), hour, sep = "_")) %>% 
-  filter(between(yday(timestamp),249, 259)) #manually subset for fall migration
+  filter(between(yday(timestamp), 249, 258)) #manually subset for fall migration
 
 #list ERA5 files with the same month-year data as the cuckoos
 months_fall_migration <- c("8_2021", "9_2021")
@@ -97,5 +97,5 @@ for(i in hrs_to_plot){
 }
 
 #create animation of the maps. run the following code in the terminal
-#ffmpeg -framerate 20 -pattern_type glob -i "*.png" CuOpt02_interpolated.mp4
+#ffmpeg -framerate 17 -pattern_type glob -i "*.png" CuOpt02_interpolated.mp4
 
