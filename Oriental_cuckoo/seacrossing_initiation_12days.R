@@ -17,12 +17,12 @@ wgs <- CRS("+proj=longlat +datum=WGS84 +no_defs")
 ### STEP 1: prepare data for annotation -------------------------------------------------------------------------------------------
 #open coordinates sent by Olga
 
-target_coords <- read_excel("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/Coordinates for Elham.xlsx", range = "A2:C3", 
+target_coords <- read_excel("/home/mahle68/ownCloud - enourani@ab.mpg.de@owncloud.gwdg.de/Work/Collaborations/cuckoos/Olga_cuckoos/Coordinates for Elham.xlsx", range = "A2:C3", 
                       col_names = c("origin", "lat", "lon")) %>% 
   mutate(origin = str_sub(origin, start = 8))
 
 
-sc <- read_excel("/home/enourani/ownCloud/Work/Collaborations/Olga_cuckoos/Coordinates for Elham.xlsx", range = "A4:D9", 
+sc <- read_excel("/home/mahle68/ownCloud - enourani@ab.mpg.de@owncloud.gwdg.de/Work/Collaborations/cuckoos/Olga_cuckoos/Coordinates for Elham.xlsx", range = "A4:D9", 
                  col_names = c("ID", "lat", "lon", "timestamp")) %>% 
   mutate(timestamp = as.POSIXct(timestamp, format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
          origin = ifelse(str_detect(ID, "J"), "Japan", "China"),

@@ -1,15 +1,14 @@
 #preparing Olga's Cuckoo data for analysis
 
-library(tidyverse)
+#library(tidyverse)
 library(lubridate)
 library(sf)
 library(reticulate)
-library(raster)
+#library(raster)
 library(cowplot)
 library(rcartocolor)
 library(mapview)
 library(rworldmap)
-library(cowplot)
 library(ncdf4)
 library(RNCEP)
 library(ggridges)
